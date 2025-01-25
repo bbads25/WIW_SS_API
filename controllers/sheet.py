@@ -215,6 +215,9 @@ class Smartsheet:
         :return: bool, True if any value in new data differs from old data, False otherwise
         """
         # Fields to normalize
+        if not old_data or not new_data:
+            return True
+
         fields_to_normalize = {"Capabilities", "WIW_Position", "WIW_Schedule"}
 
         # Normalize new data
@@ -257,6 +260,7 @@ class Smartsheet:
         print("--------")
         print("Change Required: ", self.compare_rows(row, row_data))
         print("#########")
+
         if not self.compare_rows(row, row_data):
             return {"status": "Change not required - smartsheet"}
 

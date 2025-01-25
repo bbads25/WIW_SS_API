@@ -1,3 +1,5 @@
+import traceback
+
 from api import smartsheet_client
 from controllers.sync_manager import SyncManager
 from typing import Dict, Any
@@ -33,7 +35,7 @@ async def handle_wheniwork_webhook(request: Request):
         return {"success": True}
     except Exception as e:
         print("Error handling whenIwork event")
-        print(e)
+        print(traceback.print_exc())
         return {"success": False, "error": str(e)}
 
 
