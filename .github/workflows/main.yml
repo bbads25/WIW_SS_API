@@ -1,0 +1,24 @@
+name: Build API and Deploy
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # SSH into the server
+      - name: SSH into server
+        uses: appleboy/ssh-action@master
+        with:
+          # The server IP of our VPS from DigitalOcean
+          # or any other provider. This is again
+          # passed in as a secret.
+          host: ${{ secrets.SERVER_IP }}
+          # Username of the user sshing into the server
+          username: ${{ secrets.USERNAME }}
+          # The private ssh key in order to get access
+          password: ${{ secrets.PASSWORD }}
+          script: cd ${{ secrets.WORK_DIR }} && git pull origin ${{ secrets.MAIN_BRANCH }} && exit
