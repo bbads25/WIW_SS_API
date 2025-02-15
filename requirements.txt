@@ -3,3 +3,5 @@ fastapi
 smartsheet-python-sdk
 uvicorn
 httpx
+
+# nohup gunicorn -k uvicorn.workers.UvicornWorker --bind 127.0.0.1:3000 main:app --error-logfile gunicorn.error.log --access-logfile gunicorn.log -w 1 --capture-output 2>&1 &

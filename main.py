@@ -15,7 +15,7 @@ from controllers.sheet import Smartsheet
 
 app = FastAPI()
 wiw = WhenIWork()
-smartsheet_webhook_url = "https://da8a-2-49-134-21.ngrok-free.app/webhook/smartsheet"
+smartsheet_webhook_url = "https://heptic.ae/webhook/smartsheet"
 smartsheet = Smartsheet()
 manager = SyncManager(wiw, smartsheet)
 
