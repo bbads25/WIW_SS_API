@@ -6,8 +6,21 @@ class DataTransformer:
     smartsheet_contact_columns = ['First Name', 'Last Name', 'WIW_Position', 'WIW_Schedule', 'Capabilities', 'Email',
                                   'Phone Number']
 
+    wiw_job_site_columns = ["name", "address"]
+    smartsheet_job_site_columns = ["Operating Site", "Address"]
+
     def __init__(self):
         pass
+
+    @staticmethod
+    def smartsheet_to_wiw_job_site(job_site):
+        payload = {
+            "id": job_site['Primary Column'] if 'Primary Column' in job_site else '',
+            "name": job_site["Operating Site"] if 'Operating Site' in job_site else "",
+            "address": job_site["Address"] if 'Address' in job_site else ""
+        }
+
+        return payload
 
     @staticmethod
     def wiw_to_smartsheet_contact(contact, tags, wiw: WhenIWork):

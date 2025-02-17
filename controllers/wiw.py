@@ -233,6 +233,45 @@ class WhenIWork:
             print(r.status_code)
             return False
 
+    def create_or_update_job_site(self, data):
+        url = self.wiw_base_url + '/sites'
+        if data['id'] != '' and data['id']:
+            # site exists
+            url = url + '/' + str(data['id'])
+            method = "PUT"
+            payload = {
+                "name": data['name'],
+                "address": data['address'],
+            }
+            r = requests.request(method, url, headers=self.wiw_header, json=payload)
+            return data['id']
+        else:
+            # site id not in smartsheet
+            sites = requests.get(url, headers=self.wiw_header)
+            print(sites.json(), sites.status_code)
+            similar = False
+            if sites.status_code == 200:
+                # Look if site with same address present
+                for site in sites.json()['sites']:
+                    if site['name'] == data['name']:
+                        data['id'] = site['id']
+                        if data['id'] == site['id'] and data['name'] == data['name'] and data['address'] == data['address']:
+                            similar = True
+
+            # if site not found, then create in wiw else update it
+            if data['id'] == '' or not data['id']:
+                method = "POST"
+                payload = {
+                    "name": data['name'],
+                    "address": data['address'],
+                }
+                r = requests.request(method, url, headers=self.wiw_header, json=payload)
+                return r.json()['site']['id']
+            else:
+                if not similar:
+                    return self.create_or_update_job_site(data)
+                else:
+                    return data['id']
 
 if __name__ == '__main__':
     o = WhenIWork()

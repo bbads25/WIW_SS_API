@@ -1,6 +1,4 @@
-from os import cpu_count
-
-from api import response, sheet
+from contacts_sheet import sheet_id
 from controllers.sheet import Smartsheet
 from models.SmartsheetEvent import SmartsheetEvent
 from models.WhenIWorkEvent import WhenIWorkEvent
@@ -18,6 +16,8 @@ class SyncManager:
         print("Event data: ", event.data)
         if "users" in event.type:
             sheet_id = self.smartsheet.CONTACTS_SHEET_ID
+        elif "sites" in event.type:
+            sheet_id = self.smartsheet.JOB_SITES_SHEET_ID
         else:
             sheet_id = self.smartsheet.CONTACTS_SHEET_ID
 
@@ -37,9 +37,42 @@ class SyncManager:
             # Do nothing on wiw deletion
             pass
 
-    def sync_smartsheet_to_wiw(self, event: SmartsheetEvent):
-        print("Smartsheet Event data: ", event.eventType, ' ', event.objectType)
-        sheet_id = self.smartsheet.CONTACTS_SHEET_ID
+    def sync_smartsheet_to_wiw(self, sheet_id, event: SmartsheetEvent):
+        print("Smartsheet Event data: ", event.eventType, ' ', event.objectType, ' ', sheet_id)
+        if sheet_id == self.smartsheet.CONTACTS_SHEET_ID:
+            print("Processing contacts sheet event")
+            self.smartsheet_contacts_event(sheet_id, event)
+        elif sheet_id == self.smartsheet.JOB_SITES_SHEET_ID:
+            print("Processing job sites sheet event")
+            self.smartsheet_job_sites_event(sheet_id, event)
+
+    def smartsheet_job_sites_event(self, sheet_id, event):
+        if event.objectType == "sheet":
+            pass
+        if event.objectType == "row":
+            rowId = event.id
+            print("Processing row event: ", rowId)
+            row, columns = self.smartsheet.get_row(sheet_id, rowId)
+            primary_column_id = next((key for key, value in columns.items() if value == 'Primary Column'), None)
+            job_site = {}
+            for cell in row.cells:
+                if columns[cell.column_id] in self.smartsheet.JOB_SITES_SHEET_COLUMNS:
+                    job_site[columns[cell.column_id]] = cell.value
+            job_site = DataTransformer.smartsheet_to_wiw_job_site(job_site)
+            print("Job site data transformed: ", job_site)
+            job_id = self.wiw.create_or_update_job_site(job_site)
+            if job_site['id'] == '' or not job_site['id']:
+                self.smartsheet.update_cell(sheet_id, rowId, primary_column_id, job_id)
+            pass
+        if event.objectType == "cell":
+            pass
+
+        # {'nonce': '4ab004fa-9a64-4296-9fe7-27e8cbdc0026', 'timestamp': '2025-02-16T10:20:26.079+00:00', 'webhookId': 8744272095668100, 'scope': 'sheet', 'scopeObjectId': 4990363940900740,
+        # 'events': [{'objectType': 'sheet', 'eventType': 'updated', 'id': 4990363940900740, 'userId': 6308493297772420, 'timestamp': '2025-02-16T10:19:25.000+00:00'},
+        # {'objectType': 'row', 'eventType': 'updated', 'id': 2095005077081988, 'userId': 6308493297772420, 'timestamp': '2025-02-16T10:19:25.000+00:00'},
+        # {'objectType': 'cell', 'eventType': 'created', 'rowId': 2095005077081988, 'columnId': 8819538640719748, 'userId': 6308493297772420, 'timestamp': '2025-02-16T10:19:25.000+00:00'}]}
+
+    def smartsheet_contacts_event(self, sheet_id, event: SmartsheetEvent):
         if event.objectType == 'sheet':
             pass
         elif event.objectType == 'row':
@@ -80,7 +113,6 @@ class SyncManager:
                     self.smartsheet.update_cell(sheet_id, rowId, primary_column_id, r['id'])
 
                 return r
-
         elif event.objectType == 'cell':
             rowId = event.rowId
             columnId = event.columnId
@@ -88,7 +120,6 @@ class SyncManager:
             column_updated = self.smartsheet.get_column_name(sheet_id, columnId)
             updated_cell = {column_updated: recent_value}
             print("Cell Event Recieved: ", updated_cell)
-
 # {'events': [{'uuid': '70c354f2-0100-41fb-b81e-0f133c65f561', 'type': 'users::updated', 'userId': '50757204', 'createdAt': '2025-01-16T11:13:05.314999103Z', 'sentAt': '2025-01-16T11:13:06.315Z', 'data': {'fields': {'lastName': {'new': 'Ric', 'old': 'Ricee'}}, 'userId': '51136971'}}]}
 # INFO:     18.213.164.31:0 - "POST /webhook/wheniwork HTTP/1.1" 200 OK
 # {'events': [{'uuid': '4bbc1b26-d085-4dcb-ba9e-c710f20a6f26', 'type': 'shifts::created', 'userId': '50757204', 'createdAt': '2025-01-16T11:15:39.596328973Z', 'sentAt': '2025-01-16T11:15:40.597Z', 'data': {'fields': {'accountId': {'new': 4036145, 'old': None}, 'breakTime': {'new': 1, 'old': None}, 'color': {'new': 'cccccc', 'old': None}, 'creatorId': {'new': 50757204, 'old': None}, 'endTime': {'new': '2025-01-14 14:00:00', 'old': None}, 'instances': {'new': 1, 'old': None}, 'locationId': {'new': 5640122, 'old': None}, 'positionId': {'new': 11222535, 'old': None}, 'published': {'new': 1, 'old': None}, 'publishedDate': {'new': '2025-01-16 11:15:39', 'old': None}, 'siteId': {'new': 5286093, 'old': None}, 'startTime': {'new': '2025-01-13 14:00:00', 'old': None}}, 'shiftId': '3473997896'}}]}
