@@ -80,7 +80,7 @@ class SyncManager:
             else:
                 e['location_id'] = locations[0]['id'] if locations else ""
 
-            print("response locations: ", locations)
+            # print("response locations: ", locations)
             positions = self.wiw.get_positions(positions)
             e['position_id'] = positions[0]['id'] if positions else ""
             site = self.wiw.get_sites(e['Operating Site'])
@@ -92,10 +92,10 @@ class SyncManager:
             # TODO: client_team_lookup['WIW_Shift_Task_Lists']
             print('intermediate: ', e)
 
-            users = e['Operator'].split(', ') if 'Operator' in e and e['Operator'] != '' and e['Operator'] else ["0"]
+            users = e['Operator'].split(', ') if 'Operator' in e and e['Operator'] != '' and e['Operator'] else [0]
             user_ids = []
             for user in users:
-                if user == "0":
+                if user == 0:
                     user_ids.append(user)
                     continue
                 wiw_user = self.wiw.get_users(user)
