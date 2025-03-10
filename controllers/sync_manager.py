@@ -18,8 +18,6 @@ class SyncManager:
             sheet_id = self.smartsheet.CONTACTS_SHEET_ID
         elif "sites" in event.type:
             sheet_id = self.smartsheet.JOB_SITES_SHEET_ID
-        else:
-            sheet_id = self.smartsheet.CONTACTS_SHEET_ID
 
         if event.type == "users::created" or event.type == "users::updated":
             print("Event Type: ", event.type)
@@ -38,13 +36,95 @@ class SyncManager:
             pass
 
     def sync_smartsheet_to_wiw(self, sheet_id, event: SmartsheetEvent):
-        print("Smartsheet Event data: ", event.eventType, ' ', event.objectType, ' ', sheet_id)
+        # print("Smartsheet Event data: ", event.eventType, ' ', event.objectType, ' ', sheet_id)
         if sheet_id == self.smartsheet.CONTACTS_SHEET_ID:
             print("Processing contacts sheet event")
             self.smartsheet_contacts_event(sheet_id, event)
         elif sheet_id == self.smartsheet.JOB_SITES_SHEET_ID:
             print("Processing job sites sheet event")
             self.smartsheet_job_sites_event(sheet_id, event)
+        elif sheet_id == self.smartsheet.EVENTS_SHEET_ID:
+            print("Processing events sheet event")
+            self.smartsheet_events_event(sheet_id, event)
+
+
+    def smartsheet_events_event(self, sheet_id, event):
+        if event.objectType == "sheet":
+            pass
+        if event.objectType == "row":
+            rowId = event.id
+            print("Processing row event: ", rowId)
+            row, columns = self.smartsheet.get_row(sheet_id, rowId)
+            primary_column_id = next((key for key, value in columns.items() if value == 'Primary Column'), None)
+            e = {}
+            for cell in row.cells:
+                if columns[cell.column_id] in self.smartsheet.EVENTS_SHEET_COLUMNS:
+                    e[columns[cell.column_id]] = cell.value
+            print('initial:', e) # good enough
+
+            client_team_lookup = self.smartsheet.master_lookup(e['Client Team'])
+            locations = ""
+            positions = ""
+            if client_team_lookup:
+                locations = client_team_lookup['WIW_Schedule']
+                positions = client_team_lookup['WIW_Position']
+            else:
+                locations = "Default"
+                positions = "Operator"
+            print("Client team lookup: ", client_team_lookup)
+            print("Selected location: ", locations)
+            locations = self.wiw.get_locations(locations)
+            if locations[0]['name'].lower() != client_team_lookup['WIW_Schedule'].lower():
+                location_id = self.wiw.create_location(client_team_lookup['WIW_Schedule'])
+                e['location_id'] = location_id
+            else:
+                e['location_id'] = locations[0]['id'] if locations else ""
+
+            print("response locations: ", locations)
+            positions = self.wiw.get_positions(positions)
+            e['position_id'] = positions[0]['id'] if positions else ""
+            site = self.wiw.get_sites(e['Operating Site'])
+            if not site:
+                site = self.wiw.create_or_update_job_site({"id": "", "name": e['Operating Site'], "address": ""})
+            print("SITE FOUND/CREATED:", site)
+            e['site_id'] = site['id'] if site else ""
+            # TODO: client_team_lookup['Capability_Required']
+            # TODO: client_team_lookup['WIW_Shift_Task_Lists']
+            print('intermediate: ', e)
+
+            users = e['Operator'].split(', ') if 'Operator' in e and e['Operator'] != '' else ["0"]
+            user_ids = []
+            for user in users:
+                if user == "0":
+                    user_ids.append(user)
+                    continue
+                wiw_user = self.wiw.get_users(user)
+                if wiw_user and len(wiw_user['users']) > 0:
+                    wiw_user = wiw_user['users'][0]['id']
+                    user_ids.append(wiw_user)
+                else:
+                    print(f"User does not exist in wiw, creating {user}...")
+                    contact = DataTransformer.smartsheet_to_wiw_contact({"First Name": user.split(' ')[0], "Last Name": user.split(' ')[-1]})
+                    user = self.wiw.create_or_update_user(contact)
+                    user_ids.append(user['id'])
+
+            shift_ids = []
+            for user_id in user_ids:
+                print("Processing user: ", user_id)
+                shift = DataTransformer.smartsheet_to_wiw_shift(e, user_id)
+                print('FINAL SHIFT: ', shift)
+                r = self.wiw.create_or_update_shift(shift)
+                if r:
+                    print("Shift created: ", r)
+                    shift_ids.append(r['id'])
+            if shift_ids:
+                print("Publishing shifts: ", shift_ids)
+                return self.wiw.publish_shifts(shift_ids)
+            else:
+                print("No shifts published!")
+                return False
+        if event.objectType == "cell":
+            pass
 
     def smartsheet_job_sites_event(self, sheet_id, event):
         if event.objectType == "sheet":
@@ -60,7 +140,7 @@ class SyncManager:
                     job_site[columns[cell.column_id]] = cell.value
             job_site = DataTransformer.smartsheet_to_wiw_job_site(job_site)
             print("Job site data transformed: ", job_site)
-            job_id = self.wiw.create_or_update_job_site(job_site)
+            job_id = self.wiw.create_or_update_job_site(job_site)['id']
             if job_site['id'] == '' or not job_site['id']:
                 self.smartsheet.update_cell(sheet_id, rowId, primary_column_id, job_id)
             pass

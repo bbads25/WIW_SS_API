@@ -3,10 +3,15 @@ import smartsheet
 class Smartsheet:
     CONTACTS_SHEET_ID = 5103766730657668
     JOB_SITES_SHEET_ID = 4990363940900740
-    EVENTS_SHEET_ID = 2879486383050628
+    EVENTS_SHEET_ID = 3021164519575428
+    MASTER_LOOKUP_ID = 7822439689965444
+
     CONTACT_SHEET_COLUMNS = ['First Name', 'Last Name', 'WIW_Position', 'WIW_Schedule', 'Capabilities', 'Email',
                              'Phone Number', "Name", "Primary Column"]
     JOB_SITES_SHEET_COLUMNS = ["Operating Site", "Address", "Primary Column"]
+    EVENTS_SHEET_COLUMNS = ["Operator", "Operating Site", "Date", "Game ID", "Client Team",
+                            "Home Team", "Away Team", "TV Network", "Call Time (Local)", "Start Time (EST)"]
+    MASTER_LOOKUP_COLUMNS = ["1. Team", "WIW_Schedule", "WIW_Position", "Capability_Required", "WIW_Shift_Task_Lists"]
 
     def __init__(self):
         SMARTSHEET_KEY = "5WJCTGhYBqjXx7UeppXrIaSSWASmcp3VqNr6T"
@@ -18,6 +23,9 @@ class Smartsheet:
 
         if not self.check_webhook(webhook_url, self.JOB_SITES_SHEET_ID):
             self.add_webhook("JobSites-Python", webhook_url, self.JOB_SITES_SHEET_ID)
+
+        if not self.check_webhook(webhook_url, self.EVENTS_SHEET_ID):
+            self.add_webhook("Events-Python", webhook_url, self.EVENTS_SHEET_ID)
 
 
     def check_webhook(self, webhook_url, sheet_id):
@@ -287,6 +295,15 @@ class Smartsheet:
 
         return response
 
+    def master_lookup(self, client_team):
+        sheet, columns = self.get_sheet(self.MASTER_LOOKUP_ID)
+        sheet = self.filter_sheet(sheet, columns, self.MASTER_LOOKUP_COLUMNS)
+        for row in sheet:
+            print("Master lookup: ", row)
+            print(row['1. Team'])
+            break
+        result = next((row for row in sheet if '1. Team' in row and row['1. Team'] == client_team), None)
+        return result
 
 if __name__ == '__main__':
     o = Smartsheet()

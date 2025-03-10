@@ -13,6 +13,31 @@ class DataTransformer:
         pass
 
     @staticmethod
+    def smartsheet_to_wiw_shift(shift, operator = "0"):
+        notes = [
+            f"Game ID: {shift['Game ID']}",
+            f"Date: {shift['Date']}",
+            f"Client Team: {shift["Client Team"]}",
+            f"Match: {shift["Home Team"]} @ {shift['Away Team']}",
+            f"TV Network: {shift['TV Network']}"
+        ]
+        end_time = shift['Date'] +  ' ' + shift['Start Time (EST)'] if 'Start Time (EST)' in shift and shift['Start Time (EST)'] else shift['Date']
+        shift['Call Time (Local)'] = shift['Call Time (Local)'].replace('ET', '').strip() if 'Call Time (Local)' in shift else None
+        payload = {
+            "user_id": operator,
+            "location_id": shift['location_id'] if 'location_id' in shift else '',
+            'position_id': shift['position_id'] if 'position_id' in shift else '',
+            "site_id": shift['site_id'] if 'site_id' in shift else '',
+            "start_time": shift['Date'] +  ' ' + shift['Call Time (Local)'] if shift['Call Time (Local)'] else shift['Date'],
+            "end_time": end_time,
+            "notes": " | ".join(notes),
+            # "tags": shift['tags'] if 'tags' in shift else '',
+            # handle shift task list using https://apidocs.wheniwork.com/external/index.html?repo=tasks&branch=main#tag/Task-Lists/paths/~1task-lists/post
+        }
+
+        return payload
+
+    @staticmethod
     def smartsheet_to_wiw_job_site(job_site):
         payload = {
             "id": job_site['Primary Column'] if 'Primary Column' in job_site else '',

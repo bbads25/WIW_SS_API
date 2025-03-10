@@ -1,4 +1,6 @@
 import time
+from re import search
+
 import requests
 
 
@@ -57,9 +59,13 @@ class WhenIWork:
         return tag_names
 
 
-    def get_positions(self):
+    def get_positions(self, search=None):
         url = self.wiw_base_url + '/positions'
-        r = requests.get(url, headers=self.wiw_header)
+        params = {}
+        if search:
+            params['search'] = search
+
+        r = requests.get(url, headers=self.wiw_header, params=params)
         return r.json()['positions']
 
     def get_position(self, id):
@@ -67,9 +73,12 @@ class WhenIWork:
         r = requests.get(url, headers=self.wiw_header)
         return r.json()['position']
 
-    def get_locations(self, ):
+    def get_locations(self, search=None):
         url = self.wiw_base_url + '/locations'
-        r = requests.get(url, headers=self.wiw_header)
+        params = {}
+        if search:
+            params['search'] = search
+        r = requests.get(url, headers=self.wiw_header, params=params)
         return r.json()['locations']
 
     def get_location(self, id):
@@ -235,7 +244,7 @@ class WhenIWork:
 
     def create_or_update_job_site(self, data):
         url = self.wiw_base_url + '/sites'
-        if data['id'] != '' and data['id']:
+        if 'id' in data and data['id'] and data['id'] != '':
             # site exists
             url = url + '/' + str(data['id'])
             method = "PUT"
@@ -244,14 +253,14 @@ class WhenIWork:
                 "address": data['address'],
             }
             r = requests.request(method, url, headers=self.wiw_header, json=payload)
-            return data['id']
+            return data
         else:
             # site id not in smartsheet
             sites = requests.get(url, headers=self.wiw_header)
             print(sites.json(), sites.status_code)
             similar = False
             if sites.status_code == 200:
-                # Look if site with same address present
+                # Look if site with same name present
                 for site in sites.json()['sites']:
                     if site['name'] == data['name']:
                         data['id'] = site['id']
@@ -266,12 +275,43 @@ class WhenIWork:
                     "address": data['address'],
                 }
                 r = requests.request(method, url, headers=self.wiw_header, json=payload)
-                return r.json()['site']['id']
+                return r.json()['site']
             else:
                 if not similar:
                     return self.create_or_update_job_site(data)
                 else:
-                    return data['id']
+                    return data
+
+    def get_sites(self, search=None):
+        url = self.wiw_base_url + '/sites'
+        r = requests.get(url, headers=self.wiw_header)
+        if r.status_code == 200:
+            sites = r.json()['sites']
+            return sites if not search else next((site for site in sites if site['name'] == search), False)
+
+        else:
+            return False
+
+    def create_or_update_shift(self, shift):
+        url = self.wiw_base_url + '/shifts'
+        method = "POST"
+        print(url)
+        print(self.wiw_header)
+        r = requests.request(method, url, headers=self.wiw_header, json=shift)
+        print("Shift creation", r.json())
+        if r.status_code == 200:
+            shift = r.json()['shift']
+            return shift
+        else:
+            return False
+
+    def publish_shifts(self, shift_ids):
+        url = self.wiw_base_url + '/shifts/publish'
+        method = "POST"
+        payload = {"ids": shift_ids}
+        r = requests.request(method, url, headers=self.wiw_header, json=payload)
+        if r.status_code == 200:
+            return True
 
 if __name__ == '__main__':
     o = WhenIWork()

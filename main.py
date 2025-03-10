@@ -75,7 +75,7 @@ async def handle_smartsheet_webhook(request: Request):
         print(payload)
         sheet_id = payload.get("scopeObjectId", "")
         for event in payload.get("events", []):
-            print("Processing event: ", event)
+            # print("Processing event: ", event)
             event_data = SmartsheetEvent(**event)
             manager.sync_smartsheet_to_wiw(sheet_id, event_data)
 
