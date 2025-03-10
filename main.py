@@ -15,9 +15,10 @@ from models.WhenIWorkEvent import WhenIWorkEvent
 from controllers.wiw import WhenIWork
 from controllers.sheet import Smartsheet
 
-print("PROD" if os.environ["PRODUCTION"]==1 else "DEV")
+print("PROD" if "PRODUCTION" in os.environ and os.environ["PRODUCTION"]==1 else "DEV")
 wiw = WhenIWork()
-smartsheet_webhook_url = "https://heptic.ae/webhook/smartsheet" if os.environ["PRODUCTION"] == "1" else "https://2d80-2-49-134-21.ngrok-free.app/webhook/smartsheet"
+# https://2d80-2-49-134-21.ngrok-free.app/webhook/wheniwork
+smartsheet_webhook_url = "https://heptic.ae/webhook/smartsheet" if "PRODUCTION" in os.environ and os.environ["PRODUCTION"] == "1" else "https://2d80-2-49-134-21.ngrok-free.app/webhook/smartsheet"
 smartsheet = Smartsheet()
 manager = SyncManager(wiw, smartsheet)
 # @asynccontextmanager

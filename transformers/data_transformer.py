@@ -22,7 +22,7 @@ class DataTransformer:
             f"TV Network: {shift['TV Network']}"
         ]
         end_time = shift['Date'] +  ' ' + shift['Start Time (EST)'] if 'Start Time (EST)' in shift and shift['Start Time (EST)'] else shift['Date']
-        shift['Call Time (Local)'] = shift['Call Time (Local)'].replace('ET', '').strip() if 'Call Time (Local)' in shift else None
+        shift['Call Time (Local)'] = shift['Call Time (Local)'].replace('ET', '').strip() if 'Call Time (Local)' in shift and shift['Call Time (Local)'] else None
         payload = {
             "user_id": operator,
             "location_id": shift['location_id'] if 'location_id' in shift else '',

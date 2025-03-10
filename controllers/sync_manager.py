@@ -92,7 +92,7 @@ class SyncManager:
             # TODO: client_team_lookup['WIW_Shift_Task_Lists']
             print('intermediate: ', e)
 
-            users = e['Operator'].split(', ') if 'Operator' in e and e['Operator'] != '' else ["0"]
+            users = e['Operator'].split(', ') if 'Operator' in e and e['Operator'] != '' and e['Operator'] else ["0"]
             user_ids = []
             for user in users:
                 if user == "0":
