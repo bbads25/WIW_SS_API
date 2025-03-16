@@ -57,11 +57,11 @@ async def handle_wheniwork_webhook(request: Request):
         events = payload.get("events", [])
         print("Events recieved from wheniwork: ")
         print(events)
-        # for event in events:
-        #     print("Processing event uuid: ", event["uuid"])
-        #     event_data = WhenIWorkEvent(**event)
-        #     manager.sync_wiw_to_smartsheet(event_data)
-        #     print("Event processed uuid: ", event_data.uuid)
+        for event in events:
+            print("Processing event uuid: ", event["uuid"])
+            event_data = WhenIWorkEvent(**event)
+            manager.sync_wiw_to_smartsheet(event_data)
+            print("Event processed uuid: ", event_data.uuid)
         return {"success": True}
     except Exception as e:
         print("Error handling whenIwork event")
@@ -73,12 +73,17 @@ async def handle_wheniwork_webhook(request: Request):
 async def handle_smartsheet_webhook(request: Request):
     try:
         payload = await request.json()
-        print(payload)
+        # print(payload)
         sheet_id = payload.get("scopeObjectId", "")
         for event in payload.get("events", []):
             # print("Processing event: ", event)
             event_data = SmartsheetEvent(**event)
-            manager.sync_smartsheet_to_wiw(sheet_id, event_data)
+            try:
+                manager.sync_smartsheet_to_wiw(sheet_id, event_data)
+            except Exception as e:
+                print("Error handling smartsheet event: ", event_data)
+                print(traceback.print_exc())
+                continue
 
         if "challenge" in payload:
             return {"smartsheetHookResponse": payload["challenge"]}

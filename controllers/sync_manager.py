@@ -5,6 +5,10 @@ from models.WhenIWorkEvent import WhenIWorkEvent
 from transformers.data_transformer import DataTransformer
 from controllers.wiw import WhenIWork
 
+# TODO: Add delete shift event
+# TODO: Remove timezones
+# TODO: Start time + 3hours = endtime
+# TODO: Don't publish openshifts
 
 class SyncManager:
     def __init__(self, wiw: WhenIWork, smartsheet: Smartsheet):
@@ -75,7 +79,7 @@ class SyncManager:
             print("Selected location: ", locations)
             locations = self.wiw.get_locations(locations)
             if locations[0]['name'].lower() != client_team_lookup['WIW_Schedule'].lower():
-                location_id = self.wiw.create_location(client_team_lookup['WIW_Schedule'])
+                location_id = self.wiw.create_location(client_team_lookup['WIW_Schedule']) # Philadelphia being created 100 times
                 e['location_id'] = location_id
             else:
                 e['location_id'] = locations[0]['id'] if locations else ""
