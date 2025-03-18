@@ -108,6 +108,7 @@ class Smartsheet:
             exclude=['linkInFromCellDetails', 'linksOutToCellsDetails', 'nonexistentCells'],
             include=['columns']
         )
+
         sheet_columns = {}
         for col in row_data.columns:
             sheet_columns[col.id] = col.title

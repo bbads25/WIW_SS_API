@@ -58,7 +58,11 @@ class SyncManager:
         if event.objectType == "row":
             rowId = event.id
             print("Processing row event: ", rowId)
-            row, columns = self.smartsheet.get_row(sheet_id, rowId)
+            try:
+                row, columns = self.smartsheet.get_row(sheet_id, rowId)
+            except Exception as e:
+                print(f"Error in get_row id: {rowId} in sheet: {sheet_id}")
+                return False
             primary_column_id = next((key for key, value in columns.items() if value == 'Primary Column'), None)
             e = {}
             for cell in row.cells:
@@ -91,7 +95,7 @@ class SyncManager:
             if not site:
                 site = self.wiw.create_or_update_job_site({"id": "", "name": e['Operating Site'], "address": ""})
             print("SITE FOUND/CREATED:", site)
-            e['site_id'] = site['id'] if site else ""
+            e['site_id'] = site['id'] if site and 'id' in site else ""
             # TODO: client_team_lookup['Capability_Required']
             # TODO: client_team_lookup['WIW_Shift_Task_Lists']
             print('intermediate: ', e)
