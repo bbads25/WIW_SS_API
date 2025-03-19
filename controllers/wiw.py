@@ -292,13 +292,21 @@ class WhenIWork:
         else:
             return False
 
-    def create_or_update_shift(self, shift):
+    def create_or_update_shift(self, data):
         url = self.wiw_base_url + '/shifts'
-        method = "POST"
-        print(url)
-        print(self.wiw_header)
-        r = requests.request(method, url, headers=self.wiw_header, json=shift)
-        print("Shift creation", r.json())
+        if 'id' in data and data['id'] and data['id'] != '':
+            # shift exists
+            url = url + '/' + str(data['id'])
+            method = "PUT"
+            r = requests.request(method, url, headers=self.wiw_header, json=data)
+            print("Shift updated: ", r.json())
+        else:
+            method = "POST"
+            print(url)
+            print(self.wiw_header)
+            r = requests.request(method, url, headers=self.wiw_header, json=data)
+            print("Shift created: ", r.json())
+
         if r.status_code == 200:
             shift = r.json()['shift']
             return shift

@@ -8,9 +8,12 @@ class Smartsheet:
 
     CONTACT_SHEET_COLUMNS = ['First Name', 'Last Name', 'WIW_Position', 'WIW_Schedule', 'Capabilities', 'Email',
                              'Phone Number', "Name", "Primary Column"]
+
     JOB_SITES_SHEET_COLUMNS = ["Operating Site", "Address", "Primary Column"]
+
     EVENTS_SHEET_COLUMNS = ["Operator", "Operating Site", "Date", "Game ID", "Client Team",
-                            "Home Team", "Away Team", "TV Network", "Call Time (Local)", "Start Time (EST)"]
+                            "Home Team", "Away Team", "TV Network", "Call Time (Local)", "Start Time (EST)", "WIW_Shift_ID"]
+
     MASTER_LOOKUP_COLUMNS = ["1. Team", "WIW_Schedule", "WIW_Position", "Capability_Required", "WIW_Shift_Task_Lists"]
 
     def __init__(self):

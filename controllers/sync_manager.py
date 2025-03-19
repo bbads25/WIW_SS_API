@@ -1,3 +1,5 @@
+from pickle import PROTO
+
 from contacts_sheet import sheet_id
 from controllers.sheet import Smartsheet
 from models.SmartsheetEvent import SmartsheetEvent
@@ -63,7 +65,8 @@ class SyncManager:
             except Exception as e:
                 print(f"Error in get_row id: {rowId} in sheet: {sheet_id}")
                 return False
-            primary_column_id = next((key for key, value in columns.items() if value == 'Primary Column'), None)
+            primary_column_id = next((key for key, value in columns.items() if value == 'WIW_Shift_ID'), None)
+
             e = {}
             for cell in row.cells:
                 if columns[cell.column_id] in self.smartsheet.EVENTS_SHEET_COLUMNS:
@@ -79,8 +82,8 @@ class SyncManager:
             else:
                 locations = "Default"
                 positions = "Operator"
-            print("Client team lookup: ", client_team_lookup)
-            print("Selected location: ", locations)
+            # print("Client team lookup: ", client_team_lookup)
+            # print("Selected location: ", locations)
             locations = self.wiw.get_locations(locations)
             if locations[0]['name'].lower() != client_team_lookup['WIW_Schedule'].lower():
                 location_id = self.wiw.create_location(client_team_lookup['WIW_Schedule']) # Philadelphia being created 100 times
@@ -94,7 +97,7 @@ class SyncManager:
             site = self.wiw.get_sites(e['Operating Site'])
             if not site:
                 site = self.wiw.create_or_update_job_site({"id": "", "name": e['Operating Site'], "address": ""})
-            print("SITE FOUND/CREATED:", site)
+            # print("SITE FOUND/CREATED:", site)
             e['site_id'] = site['id'] if site and 'id' in site else ""
             # TODO: client_team_lookup['Capability_Required']
             # TODO: client_team_lookup['WIW_Shift_Task_Lists']
@@ -114,6 +117,7 @@ class SyncManager:
                     print(f"User does not exist in wiw, creating {user}...")
                     contact = DataTransformer.smartsheet_to_wiw_contact({"First Name": user.split(' ')[0], "Last Name": user.split(' ')[-1]})
                     user = self.wiw.create_or_update_user(contact)
+                    print(f"User created: {user}")
                     user_ids.append(user['id'])
 
             shift_ids = []
@@ -124,6 +128,8 @@ class SyncManager:
                 r = self.wiw.create_or_update_shift(shift)
                 if r:
                     print("Shift created: ", r)
+                    # add ID to smartsheet
+                    self.smartsheet.update_cell(sheet_id, rowId, primary_column_id, r['id'])
                     shift_ids.append(r['id'])
             if shift_ids:
                 print("Publishing shifts: ", shift_ids)

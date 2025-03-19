@@ -1,5 +1,5 @@
 from controllers.wiw import WhenIWork
-
+from datetime import datetime, timedelta
 
 class DataTransformer:
     wiw_contact_columns = ['firstName', 'lastName', 'email', 'phoneNumber', 'locationId', 'positionId', 'role']
@@ -22,7 +22,29 @@ class DataTransformer:
             f"TV Network: {shift['TV Network']}"
         ]
 
-        end_time = shift['Date'] +  ' ' + shift['Start Time (EST)'] if 'Start Time (EST)' in shift and shift['Start Time (EST)'] else shift['Date']
+        # end_time = shift['Date'] +  ' ' + shift['Start Time (EST)'] if 'Start Time (EST)' in shift and shift['Start Time (EST)'] else shift['Date']
+        start_time_str = shift.get('Start Time (EST)')
+        date_str = shift.get('Date')
+
+        if start_time_str and date_str:
+            # Combine the date and time into a single datetime string
+            datetime_str = date_str + ' ' + start_time_str
+
+            # Define the datetime format for parsing
+            datetime_format = "%Y-%m-%d %I:%M %p"  # This format corresponds to '2025-03-19 7:30 PM'
+
+            # Parse the datetime string into a datetime object
+            start_datetime = datetime.strptime(datetime_str, datetime_format)
+
+            # Add 3 hours
+            end_datetime = start_datetime + timedelta(hours=3)
+
+            # Convert the result back to string format if needed
+            end_time = end_datetime.strftime("%Y-%m-%d %I:%M %p")
+
+        else:
+            end_time = shift['Date']
+
         shift['Call Time (Local)'] = shift['Call Time (Local)'].replace('ET', '').strip() if 'Call Time (Local)' in shift and shift['Call Time (Local)'] else None
 
         payload = {
@@ -33,6 +55,7 @@ class DataTransformer:
             "start_time": shift['Date'] +  ' ' + shift['Call Time (Local)'] if shift['Call Time (Local)'] else shift['Date'],
             "end_time": end_time,
             "notes": " | ".join(notes),
+            "id": shift['WIW_Shift_ID'] if 'WIW_Shift_ID' in shift else '',
             # "tags": shift['tags'] if 'tags' in shift else '',
             # handle shift task list using https://apidocs.wheniwork.com/external/index.html?repo=tasks&branch=main#tag/Task-Lists/paths/~1task-lists/post
         }
